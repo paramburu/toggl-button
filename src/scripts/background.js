@@ -578,7 +578,7 @@ var TogglButton = {
   setNanny: function (state) {
     localStorage.setItem("idleCheckEnabled", state);
     TogglButton.$idleCheckEnabled = state;
-    if (state) {
+    if (!ToggleButton.$skipReminder && state) {
       TogglButton.triggerNotification();
     }
   },
@@ -586,7 +586,7 @@ var TogglButton = {
   setNannyFromTo: function (state) {
     localStorage.setItem("idleFromTo", state);
     TogglButton.$idleFromTo = state;
-    if (TogglButton.$idleCheckEnabled) {
+    if (!ToggleButton.$skipReminder && TogglButton.$idleCheckEnabled) {
       TogglButton.triggerNotification();
     }
   },
@@ -594,12 +594,12 @@ var TogglButton = {
   setNannyInterval: function (state) {
     localStorage.setItem("idleInterval", Math.max(state, 1000));
     TogglButton.$idleInterval = state;
-    if (TogglButton.$idleCheckEnabled) {
+    if (!ToggleButton.$skipReminder && TogglButton.$idleCheckEnabled) {
       TogglButton.triggerNotification();
     }
   },
 
-  checkState: function () {
+  triggerNotification: function () {
     chrome.idle.queryState(15, TogglButton.checkActivity);
   },
 
@@ -607,7 +607,7 @@ var TogglButton = {
     clearTimeout(TogglButton.$timer);
     TogglButton.$timer = null;
 
-    if (TogglButton.$user && currentState === "active" &&
+    if (!ToggleButton.$skipReminder && TogglButton.$user && currentState === "active" &&
         TogglButton.$idleCheckEnabled &&
         TogglButton.$curEntry === null &&
         TogglButton.workingTime()) {
@@ -621,7 +621,7 @@ var TogglButton = {
           message: "Don't forget to track your time!",
           buttons: [
             { title: "Start timer"},
-            { title: "Open Toggl.com"}
+            { title: "Don't remind me for now"}
           ]
         },
         function () {
@@ -632,12 +632,13 @@ var TogglButton = {
   },
 
   notificationBtnClick: function (notificationID, buttonID) {
+    if (notificationId !== 'remind-to-track-time') return;
+    
     if (buttonID === 0) {
       // start timer
       TogglButton.createTimeEntry({"type": "timeEntry", "service": "dropdown"}, null);
     } else {
-      // open toggl.com
-      chrome.tabs.create({url: 'https://toggl.com'});
+      ToogleButton.$skipReminder = true;
     }
   },
 
@@ -664,7 +665,7 @@ var TogglButton = {
   },
 
   triggerNotification: function () {
-    if (TogglButton.$timer === null && TogglButton.$curEntry === null) {
+    if (!ToggleButton.$skipReminder && TogglButton.$timer === null && TogglButton.$curEntry === null) {
       TogglButton.hideNotification();
       TogglButton.$timer = setTimeout(TogglButton.checkState, TogglButton.$idleInterval);
     }
